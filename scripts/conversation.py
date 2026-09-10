@@ -37,6 +37,7 @@ OPTIONAL_SLOTS = [
     "temperature",
     "habitat_fragmentation_index",
     "pollution_index",
+    "deforestation_rate",
     "region",
 ]
 
@@ -119,6 +120,7 @@ def generate_clarifying_question(missing_slots: list[str]) -> str:
         "temperature": "average temperature",
         "habitat_fragmentation_index": "how fragmented/connected the surrounding habitat is",
         "pollution_index": "any known pollution sources nearby (runoff, chemicals)",
+        "deforestation_rate": "rate of forest/tree cover loss in your area (% per year)",
         "region": "your region or climate zone",
     }
     items = [friendly_names.get(s, s) for s in missing_slots]

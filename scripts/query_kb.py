@@ -196,10 +196,9 @@ if __name__ == "__main__":
             for chunk in r["evidence_chunks"]:
                 print(f"  [{chunk['filename']}, relevance={chunk['relevance_score']}] {chunk['text'][:150]}...")
 
-
-print("\n" + "=" * 70)
-print("TEST QUERY 2: habitat fragmentation / species richness")
-print("=" * 70)
-hits = semantic_search("habitat fragmentation species richness biodiversity loss", n_results=3)
-for h in hits:
-    print(f"[{h['filename']}, relevance={h['relevance_score']}] {h['text'][:150]}...")
+    print("\n" + "=" * 70)
+    print("TEST QUERY 2: habitat fragmentation / species richness")
+    print("=" * 70)
+    hits = semantic_search("habitat fragmentation species richness biodiversity loss", n_results=3)
+    for h in hits:
+        print(f"[{h['filename']}, relevance={h['relevance_score']}] {h['text'][:150]}...")

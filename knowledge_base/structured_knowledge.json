@@ -112,6 +112,24 @@
       "to": "species_richness",
       "relationship": "negative_correlation",
       "note": "Pollution (chemical runoff, pesticides) reduces aquatic and soil biodiversity, particularly invertebrates and amphibians."
+    },
+    {
+      "from": "temperature",
+      "to": "heat_stress_on_pollinators",
+      "relationship": "positive_correlation",
+      "note": "Rising mean temperatures increase heat stress on pollinators, reducing foraging activity, flight time, and colony survival rates."
+    },
+    {
+      "from": "temperature",
+      "to": "species_range_shift",
+      "relationship": "positive_correlation",
+      "note": "Warming mean temperatures drive species range shifts to higher latitudes/elevations, altering local species composition and disrupting existing ecological interactions."
+    },
+    {
+      "from": "deforestation_rate",
+      "to": "microclimate_regulation",
+      "relationship": "negative_correlation",
+      "note": "Canopy loss removes shading and evapotranspiration cooling, raising local surface temperatures and reducing microclimate buffering for understory species."
     }
   ],
 
@@ -183,6 +201,32 @@
       "time_horizon": "medium_term",
       "confidence": "medium",
       "sources": ["FAO Land and Water Division Reports"]
+    },
+    {
+      "id": "int_006",
+      "action": "Introduce shade-grown / multi-strata canopy cover for heat buffering",
+      "applicable_conditions": {
+        "temperature": "> 28"
+      },
+      "mechanism": "A multi-layer tree canopy intercepts solar radiation and increases evapotranspiration, buffering microclimate temperature extremes beneath the canopy compared to open cropland.",
+      "impacted_metrics": ["temperature", "heat_stress_on_pollinators", "species_range_shift"],
+      "expected_effect": "Canopy cover reduces sub-canopy microclimate temperature by an estimated 2-4°C, lowering pollinator heat stress and buffering thermally sensitive species",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["IPCC AR6 WG2 - Land Use Chapter", "FAO Agroforestry Guidelines"]
+    },
+    {
+      "id": "int_007",
+      "action": "Launch assisted natural regeneration (ANR) / community reforestation program",
+      "applicable_conditions": {
+        "deforestation_rate": "> 1"
+      },
+      "mechanism": "Protecting existing rootstock and seed sources while excluding disturbance (grazing, fire, clearing) allows natural forest regrowth at far lower cost than replanting, restoring canopy cover, carbon stock, and microclimate regulation.",
+      "impacted_metrics": ["deforestation_rate", "carbon_stock", "microclimate_regulation", "habitat_fragmentation_index"],
+      "expected_effect": "Forest cover recovery of approximately 3-6% per year under active ANR management, with measurable carbon stock and habitat connectivity gains over 5-10 years",
+      "time_horizon": "long_term",
+      "confidence": "medium",
+      "sources": ["IPCC AR6 WG2 - Land Use Chapter", "IPBES Global Assessment Report on Biodiversity"]
     }
   ]
 }

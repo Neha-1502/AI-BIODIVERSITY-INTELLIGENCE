@@ -163,3 +163,33 @@ if __name__ == "__main__":
     print(json.dumps(result, indent=2))
     print("\n--- Rendered ---\n")
     print(format_recommendations_markdown(result))
+
+    # Second test case: exercises the climate (int_006) and human-impact/
+    # deforestation (int_007) interventions, which the brief example above
+    # never triggers. Confirms all 5 required knowledge categories
+    # (soil, land use, biodiversity, climate, human impact) can fire together.
+    print("\n" + "=" * 70)
+    print("TEST 2: climate + deforestation conditions")
+    print("=" * 70)
+    climate_inputs = {
+        "soil_organic_carbon": 0.3,
+        "rainfall": 250,
+        "land_use_type": "monoculture",
+        "temperature": 32,
+        "deforestation_rate": 2.5,
+    }
+    climate_result = generate_recommendations(climate_inputs)
+    print(json.dumps(climate_result, indent=2))
+    print("\n--- Rendered ---\n")
+    print(format_recommendations_markdown(climate_result))
+
+    fired_ids = {rec["action"] for rec in climate_result.get("recommendations", [])}
+    expected_new_actions = {
+        "Introduce shade-grown / multi-strata canopy cover for heat buffering",
+        "Launch assisted natural regeneration (ANR) / community reforestation program",
+    }
+    missing = expected_new_actions - fired_ids
+    if missing:
+        print(f"\n[WARNING] Expected new interventions did not fire: {missing}")
+    else:
+        print("\n[OK] Both new climate/deforestation interventions fired as expected.")
