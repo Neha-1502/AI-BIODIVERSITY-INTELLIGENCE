@@ -1,0 +1,25 @@
+SOURCE: Summary notes on Water Availability and Biodiversity Survival (based on IPCC AR6
+and IPBES Global Assessment Report themes)
+TOPIC: rainfall, water_availability, species_survival, pollution
+
+In semi-arid and arid regions (annual rainfall below roughly 600mm and 300mm respectively),
+water availability is frequently the primary limiting factor for both crop viability and
+wild species survival. Reduced or erratic rainfall lowers soil moisture below the threshold
+many amphibian, invertebrate, and understory plant species require to complete life cycles.
+
+IPBES assessments identify water stress as a compounding factor alongside land degradation:
+soils with low organic carbon have reduced water-holding capacity, meaning the same rainfall
+deficit produces more severe moisture stress on degraded land than on organically rich soil.
+This creates a feedback loop where soil degradation and water scarcity reinforce each other.
+
+Mulching and reduced tillage are commonly recommended low-cost interventions for
+water-stressed agricultural land, since surface mulch reduces direct evaporation and
+moderates soil temperature. Field-level studies referenced in conservation agriculture
+literature report soil moisture retention improvements in the range of 10-20% during dry
+periods when mulching is combined with reduced tillage.
+
+Separately, agricultural runoff containing nitrates and pesticides is identified as a major
+driver of aquatic biodiversity loss, independent of rainfall volume. Riparian buffer strips
+and vegetated margins near water bodies are associated with meaningful reductions in
+nutrient runoff reaching waterways, which supports recovery of aquatic invertebrate and
+amphibian populations over time.

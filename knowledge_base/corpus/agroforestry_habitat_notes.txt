@@ -1,0 +1,29 @@
+SOURCE: Summary notes on Agroforestry and Habitat Fragmentation (based on FAO Agroforestry
+Guidelines and IPCC AR6 Working Group 2, Land Use chapter)
+TOPIC: land_use_type, agroforestry, habitat_fragmentation, species_richness
+
+Land use conversion from natural or mixed vegetation to monoculture cropping is one of the
+leading drivers of habitat fragmentation in agricultural landscapes. Fragmentation isolates
+plant and animal populations into smaller patches, reducing effective population sizes,
+limiting gene flow, and increasing local extinction risk for less mobile species.
+
+Agroforestry systems -- which integrate trees with crops or livestock -- are frequently
+cited in FAO guidance as a land-use intervention that reduces fragmentation while
+maintaining agricultural productivity. The added vertical structure (tree canopy, shrub
+layer, ground cover) creates multiple habitat niches within a single land parcel, which
+tends to increase local species richness compared to monoculture plots.
+
+IPCC land-use assessments also note that agroforestry improves microclimate regulation --
+canopy cover reduces surface temperature extremes and wind speed, which lowers evapo-
+transpiration stress on understory vegetation. This is particularly relevant in semi-arid
+regions with rainfall below 600mm/year, where water stress compounds habitat degradation.
+
+Because tree establishment and canopy development take multiple growing seasons,
+agroforestry conversion is generally categorized as a long-term intervention (3-5+ years
+for measurable biodiversity gains), in contrast to shorter-term interventions like cover
+cropping or mulching.
+
+Habitat corridors and hedgerows, which are lower-cost partial interventions, can produce
+faster (1-2 season) improvements in mobile species indicators such as pollinator visitation
+rates by reconnecting otherwise fragmented patches, even before full agroforestry
+conversion is complete.

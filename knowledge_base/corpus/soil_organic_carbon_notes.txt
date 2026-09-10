@@ -1,0 +1,24 @@
+SOURCE: Summary notes on Soil Organic Carbon research (based on FAO Global Soil Partnership publications)
+TOPIC: soil_organic_carbon, cover_crops, microbial_diversity
+
+Soil organic carbon (SOC) is widely used as a core indicator of soil health because it
+directly influences nutrient cycling, water retention, and microbial habitat availability.
+Degraded agricultural soils, particularly under continuous monoculture, commonly show SOC
+levels below 0.5%, which limits the soil's capacity to support diverse microbial communities.
+
+FAO-aligned conservation agriculture research indicates that introducing leguminous cover
+crops (such as clover or vetch) into rotation cycles adds nitrogen-rich organic matter to
+the soil. Multi-year field trials referenced in FAO conservation agriculture literature
+report SOC increases in the range of roughly 15-25% over a 2-3 year period following
+sustained cover crop adoption, compared to continuous monoculture baselines.
+
+Increases in SOC are associated with higher microbial biomass and functional diversity,
+because organic carbon serves as the primary energy substrate for soil microorganisms.
+Greater microbial diversity in turn supports healthier root-associated fungal networks
+(mycorrhizae), which improve plant nutrient uptake and indirectly support flowering plant
+vigor -- a factor relevant to pollinator food availability.
+
+Reduced or no-till practices, when combined with cover cropping, further preserve soil
+aggregate structure and prevent the disruption of microbial habitat that conventional
+tillage causes. This combination is generally recommended in semi-arid and degraded soil
+contexts where organic matter is already scarce.

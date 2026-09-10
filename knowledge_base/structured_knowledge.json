@@ -1,0 +1,188 @@
+{
+  "metrics": {
+    "soil_organic_carbon": {
+      "unit": "%",
+      "thresholds": {
+        "degraded": "< 0.5",
+        "poor": "0.5 - 1.0",
+        "moderate": "1.0 - 2.0",
+        "healthy": "> 2.0"
+      },
+      "linked_metrics": ["microbial_diversity", "water_holding_capacity", "pollinator_support", "species_richness"]
+    },
+    "soil_ph": {
+      "unit": "pH",
+      "thresholds": {
+        "acidic": "< 5.5",
+        "optimal": "5.5 - 7.5",
+        "alkaline": "> 7.5"
+      },
+      "linked_metrics": ["nutrient_availability", "microbial_diversity"]
+    },
+    "soil_moisture": {
+      "unit": "% volumetric",
+      "thresholds": {
+        "arid_stress": "< 10",
+        "adequate": "10 - 30",
+        "saturated": "> 30"
+      },
+      "linked_metrics": ["species_survival", "vegetation_cover"]
+    },
+    "rainfall": {
+      "unit": "mm/year",
+      "thresholds": {
+        "arid": "< 300",
+        "semi_arid": "300 - 600",
+        "sub_humid": "600 - 1000",
+        "humid": "> 1000"
+      },
+      "linked_metrics": ["water_availability", "species_survival", "crop_viability"]
+    },
+    "temperature": {
+      "unit": "°C mean annual",
+      "linked_metrics": ["species_range_shift", "phenology", "heat_stress_on_pollinators"]
+    },
+    "land_use_type": {
+      "categories": ["monoculture", "intercropping", "agroforestry", "natural_forest", "grassland", "urban", "fallow"],
+      "linked_metrics": ["habitat_fragmentation", "species_richness", "soil_organic_carbon"]
+    },
+    "habitat_fragmentation_index": {
+      "unit": "0 (contiguous) - 1 (fully fragmented)",
+      "linked_metrics": ["species_richness", "pollinator_movement", "genetic_diversity"]
+    },
+    "species_richness": {
+      "unit": "count / standardized area",
+      "linked_metrics": ["habitat_diversity", "soil_organic_carbon", "land_use_type"]
+    },
+    "pollution_index": {
+      "unit": "composite 0-100",
+      "linked_metrics": ["water_quality", "species_richness", "human_health"]
+    },
+    "deforestation_rate": {
+      "unit": "% forest cover loss / year",
+      "linked_metrics": ["habitat_fragmentation_index", "carbon_stock", "microclimate_regulation"]
+    }
+  },
+
+  "relationship_graph": [
+    {
+      "from": "soil_organic_carbon",
+      "to": "microbial_diversity",
+      "relationship": "positive_correlation",
+      "note": "Higher SOC provides more substrate for soil microbial communities, increasing microbial biomass and functional diversity."
+    },
+    {
+      "from": "microbial_diversity",
+      "to": "pollinator_support",
+      "relationship": "positive_correlation",
+      "note": "Healthier soil microbiomes support more robust flowering plant communities, indirectly sustaining pollinator populations."
+    },
+    {
+      "from": "land_use_type",
+      "to": "habitat_fragmentation_index",
+      "relationship": "context_dependent",
+      "note": "Monoculture and urban land use increase fragmentation; agroforestry and natural land cover reduce it."
+    },
+    {
+      "from": "habitat_fragmentation_index",
+      "to": "species_richness",
+      "relationship": "negative_correlation",
+      "note": "Fragmented habitats reduce species richness by isolating populations and limiting gene flow and movement corridors."
+    },
+    {
+      "from": "rainfall",
+      "to": "water_availability",
+      "relationship": "positive_correlation",
+      "note": "Low and erratic rainfall directly reduces surface and soil water availability, especially in semi-arid zones."
+    },
+    {
+      "from": "water_availability",
+      "to": "species_survival",
+      "relationship": "positive_correlation",
+      "note": "Water-stressed ecosystems see reduced species survival rates, particularly for amphibians, pollinators, and understory vegetation."
+    },
+    {
+      "from": "deforestation_rate",
+      "to": "carbon_stock",
+      "relationship": "negative_correlation",
+      "note": "Forest loss releases stored carbon and reduces long-term carbon sequestration capacity."
+    },
+    {
+      "from": "pollution_index",
+      "to": "species_richness",
+      "relationship": "negative_correlation",
+      "note": "Pollution (chemical runoff, pesticides) reduces aquatic and soil biodiversity, particularly invertebrates and amphibians."
+    }
+  ],
+
+  "interventions": [
+    {
+      "id": "int_001",
+      "action": "Introduce legume-based cover crops in rotation",
+      "applicable_conditions": {
+        "soil_organic_carbon": "< 1.0",
+        "land_use_type": ["monoculture", "fallow"]
+      },
+      "mechanism": "Legumes fix atmospheric nitrogen and add biomass to soil, increasing organic matter input and microbial activity.",
+      "impacted_metrics": ["soil_organic_carbon", "microbial_diversity", "pollinator_support"],
+      "expected_effect": "Soil organic carbon increases by approximately 15-25% over 2-3 years",
+      "time_horizon": "medium_term",
+      "confidence": "high",
+      "sources": ["FAO - Conservation Agriculture Reports", "FAO Soil Organic Carbon Mapping Studies"]
+    },
+    {
+      "id": "int_002",
+      "action": "Convert monoculture to agroforestry / intercropping system",
+      "applicable_conditions": {
+        "land_use_type": ["monoculture"],
+        "rainfall": "< 600"
+      },
+      "mechanism": "Tree-crop integration creates vertical habitat structure, reduces soil erosion, moderates microclimate, and diversifies root systems for better water infiltration.",
+      "impacted_metrics": ["soil_organic_carbon", "species_richness", "habitat_fragmentation_index", "water_availability"],
+      "expected_effect": "Habitat fragmentation index reduced by an estimated 20-30%; species richness gains typically observed within 3-5 years",
+      "time_horizon": "long_term",
+      "confidence": "high",
+      "sources": ["FAO Agroforestry Guidelines", "IPCC AR6 WG2 - Land Use Chapter"]
+    },
+    {
+      "id": "int_003",
+      "action": "Establish native hedgerows / habitat corridors along field boundaries",
+      "applicable_conditions": {
+        "habitat_fragmentation_index": "> 0.5"
+      },
+      "mechanism": "Corridors reconnect fragmented habitat patches, enabling species movement, gene flow, and pollinator foraging range expansion.",
+      "impacted_metrics": ["species_richness", "habitat_fragmentation_index", "pollinator_support"],
+      "expected_effect": "Measurable increases in pollinator visitation and mobile species counts within 1-2 growing seasons",
+      "time_horizon": "short_term",
+      "confidence": "medium",
+      "sources": ["IPBES Global Assessment Report on Biodiversity"]
+    },
+    {
+      "id": "int_004",
+      "action": "Implement mulching and reduced/no-till practices",
+      "applicable_conditions": {
+        "soil_moisture": "< 10",
+        "rainfall": "< 600"
+      },
+      "mechanism": "Mulch cover reduces evaporation and soil surface temperature; reduced tillage preserves soil structure and microbial networks.",
+      "impacted_metrics": ["soil_moisture", "soil_organic_carbon", "microbial_diversity"],
+      "expected_effect": "Soil moisture retention improves by an estimated 10-20% during dry periods",
+      "time_horizon": "short_term",
+      "confidence": "medium",
+      "sources": ["FAO Conservation Agriculture Reports"]
+    },
+    {
+      "id": "int_005",
+      "action": "Buffer strips / riparian vegetation restoration near water bodies",
+      "applicable_conditions": {
+        "pollution_index": "> 40"
+      },
+      "mechanism": "Vegetated buffers filter agricultural runoff (nitrates, pesticides) before it reaches waterways, reducing aquatic pollutant load.",
+      "impacted_metrics": ["pollution_index", "species_richness"],
+      "expected_effect": "Nutrient runoff reductions of approximately 30-50% reported in comparable buffer-strip studies",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["FAO Land and Water Division Reports"]
+    }
+  ]
+}
