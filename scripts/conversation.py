@@ -1,41 +1,33 @@
 """
 conversation.py
 
-Phase 3 - Conversational Intelligence layer.
+Conversational intelligence layer.
 
 Handles:
-  - Tracking what environmental variables the user has provided so far
-    (multi-turn memory)
-  - Detecting which required variables are still missing
-  - Using the LLM to extract structured values from free-text user messages
-    (so "it's pretty dry here, maybe 250mm a year" gets parsed into
-    {"rainfall": 250})
-  - Generating a natural clarifying question when inputs are incomplete
-
-This directly satisfies the brief's "Conversational Intelligence" requirement:
-multi-turn memory + clarifying questions + context adaptation.
+  - Multi-turn memory of environmental variables
+  - Extraction of structured values from free text (with prior-turn context)
+  - Clarifying questions when required inputs are incomplete
+  - Follow-up prompts when the user implies an extra metric without a value
 """
 
 import json
+import re
 import llm_client
 
-# The minimum set of variables needed before we can generate a grounded
-# recommendation. Expand this list as you add more metrics/interventions to
-# structured_knowledge.json.
+# Minimum variables before a grounded recommendation (brief example: SOC, rainfall, land use).
 REQUIRED_SLOTS = [
-    "soil_organic_carbon",   # % , e.g. 0.3
-    "rainfall",               # mm/year, e.g. 250
-    "land_use_type",          # one of: monoculture, intercropping, agroforestry,
-                               #         natural_forest, grassland, urban, fallow
+    "soil_organic_carbon",
+    "rainfall",
+    "land_use_type",
 ]
 
-# Optional slots -- nice to have for richer reasoning, but not required to
-# generate a first recommendation.
 OPTIONAL_SLOTS = [
     "soil_ph",
     "soil_moisture",
     "temperature",
     "habitat_fragmentation_index",
+    "habitat_diversity",
+    "species_richness",
     "pollution_index",
     "deforestation_rate",
     "region",
@@ -43,13 +35,42 @@ OPTIONAL_SLOTS = [
 
 ALL_SLOTS = REQUIRED_SLOTS + OPTIONAL_SLOTS
 
+FRIENDLY_NAMES = {
+    "soil_organic_carbon": "soil organic carbon %",
+    "rainfall": "rainfall pattern",
+    "land_use_type": "land use type",
+    "soil_ph": "soil pH",
+    "soil_moisture": "soil moisture level (% volumetric, or dry/adequate)",
+    "temperature": "mean annual temperature (°C)",
+    "habitat_fragmentation_index": "how fragmented the surrounding habitat is (0 contiguous – 1 fully fragmented)",
+    "habitat_diversity": "habitat diversity (0 single cover type – 1 mixed mosaic)",
+    "species_richness": "species richness relative to local potential (0–100, or low/moderate/high)",
+    "pollution_index": "pollution / chemical pressure nearby (0–100, or low/moderate/high)",
+    "deforestation_rate": "rate of forest/tree cover loss (% per year)",
+    "region": "your region or climate zone",
+}
+
+# If the user asks about a topic we do not yet have a number for, ask before guessing.
+_IMPLIED_SLOT_PATTERNS = [
+    (r"\bpH\b|acidic|alkaline|lime", "soil_ph"),
+    (r"moist|dry soil|waterlog", "soil_moisture"),
+    (r"temperat|\bheat\b|hot climate", "temperature"),
+    (r"fragment|corridor|isolated patch", "habitat_fragmentation_index"),
+    (r"habitat divers|mosaic|cover type", "habitat_diversity"),
+    (r"species rich|few species|biodiversity indicator", "species_richness"),
+    (r"pollut|pesticide|runoff|chemical", "pollution_index"),
+    (r"deforest|tree cover loss|clear.?cut|logging", "deforestation_rate"),
+]
+
 
 class ConversationState:
     """Holds everything collected so far in this session."""
 
     def __init__(self):
         self.collected: dict = {}
-        self.history: list[dict] = []   # [{"role": "user"/"assistant", "content": "..."}]
+        self.history: list[dict] = []
+        self.last_focus: str | None = None
+        self.asked_optional: set[str] = set()
 
     def missing_required_slots(self) -> list[str]:
         return [slot for slot in REQUIRED_SLOTS if slot not in self.collected]
@@ -64,8 +85,6 @@ class ConversationState:
         self.history.append({"role": "assistant", "content": text})
 
     def merge_extracted_values(self, extracted: dict):
-        """Only accepts known slot names, ignores anything the LLM hallucinated
-        as a key that isn't in ALL_SLOTS -- keeps state clean."""
         for key, value in extracted.items():
             if key in ALL_SLOTS and value is not None:
                 self.collected[key] = value
@@ -78,65 +97,96 @@ Known slot names you should extract, if mentioned or reasonably inferable:
 {json.dumps(ALL_SLOTS)}
 
 Rules:
-- Only extract a value if the user's message actually states or clearly implies it.
+- Use the prior conversation only to disambiguate the latest user message.
+- Only extract a value if the latest user message states or clearly implies it.
 - Do NOT guess or invent values that were not communicated.
 - "land_use_type" must be one of: monoculture, intercropping, agroforestry,
   natural_forest, grassland, urban, fallow -- map the user's description to the
   closest one of these, or omit the key if it doesn't fit any of them.
 - Numeric values (soil_organic_carbon, rainfall, soil_ph, soil_moisture,
-  temperature, habitat_fragmentation_index, pollution_index) should be plain
-  numbers, not strings, and not ranges (pick the midpoint of a stated range).
-- Vague qualitative statements like "low rainfall" or "very dry soil" without a
-  number should be converted to a reasonable representative number for that
-  category (e.g. "low rainfall" -> 250, "very degraded soil" for SOC -> 0.3)
-  ONLY if the user does not give an exact figure -- prefer exact figures when given.
+  temperature, habitat_fragmentation_index, habitat_diversity, species_richness,
+  pollution_index, deforestation_rate) should be plain numbers, not strings.
+  For a stated range, pick the midpoint.
+- Vague qualitative statements without a number should be converted to a
+  representative number ONLY if the user does not give an exact figure:
+    rainfall: low=250, moderate=700, high=1200
+    soil_organic_carbon: very degraded=0.3, poor=0.7, moderate=1.5
+    soil_moisture: dry/arid=6, adequate=18
+    temperature: hot=32, temperate=18
+    pollution: low=15, moderate=45, high=75
+    habitat_fragmentation: low=0.2, high=0.7
+    habitat_diversity: low=0.25, high=0.75
+    species_richness: low=25, moderate=55, high=80
+    deforestation: noticeable/high=2.5
 - Output ONLY a flat JSON object of extracted slot_name: value pairs. Omit any
   slot not mentioned. If nothing can be extracted, output {{}}.
 """
 
 
-def extract_slots_from_message(user_message: str) -> dict:
-    """Calls the LLM to pull structured values out of a free-text message."""
+def extract_slots_from_message(user_message: str, history: list | None = None) -> dict:
+    """Pull structured values out of free text, using recent turns as context."""
+    history_block = ""
+    if history:
+        recent = history[-8:]
+        rendered = []
+        for turn in recent:
+            content = str(turn.get("content", ""))[:500]
+            rendered.append(f"{turn.get('role', 'user')}: {content}")
+        history_block = "Prior conversation:\n" + "\n".join(rendered) + "\n\n"
+
     try:
         return llm_client.chat_json(
             system_prompt=EXTRACTION_SYSTEM_PROMPT,
-            user_prompt=f"User message: \"{user_message}\"\n\nExtract the slot values as JSON.",
+            user_prompt=(
+                f"{history_block}Latest user message: \"{user_message}\"\n\n"
+                "Extract newly stated slot values as JSON."
+            ),
         )
+    except llm_client.LLMUnavailableError:
+        raise
     except (json.JSONDecodeError, Exception) as e:
         print(f"[warning] slot extraction failed: {e}")
         return {}
 
 
-def generate_clarifying_question(missing_slots: list[str]) -> str:
-    """Turns a list of missing required slots into one natural question,
-    matching the brief's example: 'Can you provide soil organic carbon %,
-    rainfall pattern, and land use type?'"""
-    friendly_names = {
-        "soil_organic_carbon": "soil organic carbon % (or a general sense of soil health)",
-        "rainfall": "rainfall pattern (mm/year, or just 'low/moderate/high')",
-        "land_use_type": "current land use (e.g. monoculture crop, agroforestry, grassland)",
-        "soil_ph": "soil pH",
-        "soil_moisture": "soil moisture level",
-        "temperature": "average temperature",
-        "habitat_fragmentation_index": "how fragmented/connected the surrounding habitat is",
-        "pollution_index": "any known pollution sources nearby (runoff, chemicals)",
-        "deforestation_rate": "rate of forest/tree cover loss in your area (% per year)",
-        "region": "your region or climate zone",
-    }
-    items = [friendly_names.get(s, s) for s in missing_slots]
-
+def _join_friendly(slots: list[str]) -> str:
+    items = [FRIENDLY_NAMES.get(s, s) for s in slots]
     if len(items) == 1:
-        joined = items[0]
-    elif len(items) == 2:
-        joined = f"{items[0]} and {items[1]}"
-    else:
-        joined = ", ".join(items[:-1]) + f", and {items[-1]}"
+        return items[0]
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return ", ".join(items[:-1]) + f", and {items[-1]}"
 
-    return f"To give you a grounded recommendation, could you share: {joined}?"
+
+def generate_clarifying_question(missing_slots: list[str], collected: dict | None = None) -> str:
+    """Natural clarifying question; mentions what is already known when useful."""
+    if set(missing_slots) == set(REQUIRED_SLOTS):
+        return "Can you provide soil organic carbon %, rainfall pattern, and land use type?"
+    joined = _join_friendly(missing_slots)
+    if collected:
+        known_bits = []
+        for key, value in collected.items():
+            label = key.replace("_", " ")
+            known_bits.append(f"{label}={value}")
+        known = "; ".join(known_bits[:6])
+        return f"I already have {known}. Can you provide {joined}?"
+    return f"Can you provide {joined}?"
+
+
+def implied_optional_slots(user_message: str, collected: dict, already_asked: set | None = None) -> list[str]:
+    """Slots the user is asking about that we still lack a value for."""
+    asked = already_asked or set()
+    text = user_message.lower()
+    found = []
+    for pattern, slot in _IMPLIED_SLOT_PATTERNS:
+        if slot in collected or slot in asked or slot in found:
+            continue
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            found.append(slot)
+    return found
 
 
 if __name__ == "__main__":
-    # Sanity check with the brief's own example conversation
     state = ConversationState()
     state.add_user_message("Biodiversity is declining on my land")
 

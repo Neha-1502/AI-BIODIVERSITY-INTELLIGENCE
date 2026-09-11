@@ -51,8 +51,22 @@
       "linked_metrics": ["species_richness", "pollinator_movement", "genetic_diversity"]
     },
     "species_richness": {
-      "unit": "count / standardized area",
+      "unit": "relative 0-100 vs local potential",
+      "thresholds": {
+        "low": "< 40",
+        "moderate": "40 - 70",
+        "high": "> 70"
+      },
       "linked_metrics": ["habitat_diversity", "soil_organic_carbon", "land_use_type"]
+    },
+    "habitat_diversity": {
+      "unit": "0 (single cover type) - 1 (highly mixed habitats)",
+      "thresholds": {
+        "low": "< 0.4",
+        "moderate": "0.4 - 0.7",
+        "high": "> 0.7"
+      },
+      "linked_metrics": ["species_richness", "pollinator_support", "habitat_fragmentation_index"]
     },
     "pollution_index": {
       "unit": "composite 0-100",
@@ -130,6 +144,24 @@
       "to": "microclimate_regulation",
       "relationship": "negative_correlation",
       "note": "Canopy loss removes shading and evapotranspiration cooling, raising local surface temperatures and reducing microclimate buffering for understory species."
+    },
+    {
+      "from": "soil_ph",
+      "to": "microbial_diversity",
+      "relationship": "optimal_range_correlation",
+      "note": "Soil pH outside the roughly 6.0-7.0 optimal band locks up key nutrients (P, Fe, Zn) and can release toxic Al/Mn, suppressing microbial activity and diversity; correcting pH toward the optimal range restores nutrient availability and microbial function."
+    },
+    {
+      "from": "habitat_diversity",
+      "to": "species_richness",
+      "relationship": "positive_correlation",
+      "note": "A mosaic of habitat types (edges, understory, wetlands, native patches) supports more ecological niches than a single cover type, raising local species richness."
+    },
+    {
+      "from": "soil_moisture",
+      "to": "species_survival",
+      "relationship": "positive_correlation",
+      "note": "Chronically low soil moisture reduces seedling establishment and understory persistence, lowering survival of moisture-sensitive plants, invertebrates, and the species that depend on them."
     }
   ],
 
@@ -227,6 +259,143 @@
       "time_horizon": "long_term",
       "confidence": "medium",
       "sources": ["IPCC AR6 WG2 - Land Use Chapter", "IPBES Global Assessment Report on Biodiversity"]
+    },
+    {
+      "id": "int_008",
+      "action": "Apply agricultural lime or biochar to correct acidic soil pH",
+      "applicable_conditions": {
+        "soil_ph": "< 5.5"
+      },
+      "mechanism": "Lime or biochar amendment raises soil pH toward the optimal range, reducing aluminium and manganese toxicity while unlocking phosphorus, calcium, and magnesium that are otherwise chemically locked up in acidic soils, restoring conditions for microbial activity and root growth.",
+      "impacted_metrics": ["soil_ph", "microbial_diversity", "soil_organic_carbon"],
+      "expected_effect": "Soil pH shifts toward the 6.0-7.0 optimal range within 6-12 months of amendment application; biochar variants additionally contribute a stable, long-term carbon store",
+      "time_horizon": "short_term",
+      "confidence": "high",
+      "sources": ["FAO Soil Fertility Management Guidelines", "Soil Organic Carbon - the hidden potential"]
+    },
+    {
+      "id": "int_009",
+      "action": "Apply elemental sulfur or organic acidifying mulch to correct alkaline soil pH",
+      "applicable_conditions": {
+        "soil_ph": "> 8.0"
+      },
+      "mechanism": "Elemental sulfur is oxidised by soil bacteria into sulfuric acid, gradually lowering pH and improving availability of micronutrients (iron, zinc, manganese) that become insoluble and plant-unavailable under alkaline conditions, restoring microbial and root health.",
+      "impacted_metrics": ["soil_ph", "microbial_diversity"],
+      "expected_effect": "Soil pH reduced by an estimated 0.5-1.0 units over 1-2 growing seasons",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["FAO Soil Fertility Management Guidelines"]
+    },
+    {
+      "id": "int_010",
+      "action": "Construct water-harvesting bunds integrated with native vegetation corridors",
+      "applicable_conditions": {
+        "rainfall": "< 400",
+        "habitat_fragmentation_index": "> 0.4"
+      },
+      "mechanism": "Semi-circular bunds and check dams capture scarce, intermittent rainfall runoff and direct it to support the establishment of native corridor vegetation, simultaneously easing water scarcity and reconnecting fragmented habitat patches through a single shared land allocation rather than two separate interventions.",
+      "impacted_metrics": ["water_availability", "soil_moisture", "habitat_fragmentation_index", "species_richness"],
+      "expected_effect": "Captured runoff increases effective soil moisture at intervention sites by an estimated 15-20% while establishing continuous corridor vegetation across previously fragmented parcels",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["IPBES Global Assessment Report on Biodiversity", "FAO Land and Water Division Reports"]
+    },
+    {
+      "id": "int_011",
+      "action": "Transition to Integrated Pest Management (IPM) to reduce chemical input reliance",
+      "applicable_conditions": {
+        "pollution_index": "> 40",
+        "land_use_type": ["monoculture"]
+      },
+      "mechanism": "IPM combines biological pest control, crop rotation, and threshold-based spraying to reduce pesticide and fertiliser use at the source, rather than filtering runoff after the fact. This directly lowers pollution load and reduces pollinator mortality from chemical exposure, complementing downstream measures like buffer strips.",
+      "impacted_metrics": ["pollution_index", "pollinator_support", "species_richness"],
+      "expected_effect": "Pesticide-related runoff reduced by an estimated 40-60% under IPM adoption relative to conventional chemical-intensive practice",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["IPBES Global Assessment Report on Biodiversity", "FAO Integrated Pest Management Guidelines"]
+    },
+    {
+      "id": "int_012",
+      "action": "Apply an integrated compost and biochar soil amendment program",
+      "applicable_conditions": {
+        "soil_moisture": "< 10",
+        "soil_organic_carbon": "< 1.0"
+      },
+      "mechanism": "Compost adds organic matter and immediate water-holding capacity, while biochar's porous structure provides longer-term moisture retention and a stable, decade-scale carbon store. Combining both addresses moisture and carbon deficits simultaneously and more durably than mulching alone.",
+      "impacted_metrics": ["soil_moisture", "soil_organic_carbon", "microbial_diversity", "carbon_stock"],
+      "expected_effect": "Combined compost-biochar amendment improves water-holding capacity by an estimated 20-30% while adding a stable, long-term carbon store to the soil",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["Soil Organic Carbon - the hidden potential", "FAO Conservation Agriculture Reports"]
+    },
+    {
+      "id": "int_013",
+      "action": "Prioritize riparian and catchment-area afforestation over dispersed reforestation",
+      "applicable_conditions": {
+        "deforestation_rate": "> 1",
+        "rainfall": "< 500"
+      },
+      "mechanism": "Concentrating regeneration effort along waterways and upper-catchment areas maximises infiltration and dry-season baseflow recovery per hectare restored, compared with dispersed general reforestation, directly easing water scarcity while still rebuilding forest cover and habitat connectivity.",
+      "impacted_metrics": ["deforestation_rate", "water_availability", "carbon_stock", "habitat_fragmentation_index"],
+      "expected_effect": "Riparian-focused afforestation recovers dry-season baseflow measurably faster than dispersed planting of an equivalent area",
+      "time_horizon": "long_term",
+      "confidence": "medium",
+      "sources": ["IPCC AR6 WG2 - Land Use Chapter", "IPBES Global Assessment Report on Biodiversity"]
+    },
+    {
+      "id": "int_014",
+      "action": "Design multi-functional vegetated buffer corridors combining habitat connectivity and pollution filtration",
+      "applicable_conditions": {
+        "habitat_fragmentation_index": "> 0.5",
+        "pollution_index": "> 40"
+      },
+      "mechanism": "Layering native shrub and tree corridors along field boundaries and waterways simultaneously reconnects fragmented habitat patches for wildlife movement and filters agricultural runoff before it reaches waterways, achieving two degradation-reduction goals from a single, shared land allocation rather than two separate single-purpose interventions.",
+      "impacted_metrics": ["habitat_fragmentation_index", "species_richness", "pollution_index"],
+      "expected_effect": "Combined corridor design achieves fragmentation and pollution reduction comparable to two separate interventions while requiring an estimated 30-40% less land area",
+      "time_horizon": "long_term",
+      "confidence": "medium",
+      "sources": ["FAO Agroforestry Guidelines", "IPBES Global Assessment Report on Biodiversity"]
+    },
+    {
+      "id": "int_015",
+      "action": "Establish silvopasture (integrated tree-livestock-forage) system",
+      "applicable_conditions": {
+        "soil_organic_carbon": "< 1.0",
+        "habitat_fragmentation_index": "> 0.5"
+      },
+      "mechanism": "Integrating scattered trees into grazing or cropland simultaneously builds soil organic carbon through root turnover and litter input, while creating stepping-stone habitat that reduces effective fragmentation for mobile species -- addressing degraded soil and fragmented habitat through one land-use redesign.",
+      "impacted_metrics": ["soil_organic_carbon", "habitat_fragmentation_index", "species_richness", "microbial_diversity"],
+      "expected_effect": "Silvopasture systems show measurable soil organic carbon gains within 3-5 years alongside improved landscape connectivity for pollinators and birds",
+      "time_horizon": "long_term",
+      "confidence": "medium",
+      "sources": ["FAO Agroforestry Guidelines", "IPCC AR6 WG2 - Land Use Chapter"]
+    },
+    {
+      "id": "int_016",
+      "action": "Restore a native habitat mosaic (wildflower strips, beetle banks, wetland edges)",
+      "applicable_conditions": {
+        "habitat_diversity": "< 0.4"
+      },
+      "mechanism": "Replacing a single cover type with adjacent native patches increases structural and floral diversity, creating niches for pollinators, predators, and soil fauna that a uniform crop or pasture cannot support.",
+      "impacted_metrics": ["habitat_diversity", "species_richness", "pollinator_support"],
+      "expected_effect": "Local species richness typically increases within 1-3 years as floral and structural niches are restored; pollinator visitation often responds in the first growing season",
+      "time_horizon": "short_term",
+      "confidence": "medium",
+      "sources": ["IPBES Global Assessment Report on Biodiversity", "FAO Agroforestry Guidelines"]
+    },
+    {
+      "id": "int_017",
+      "action": "Reintroduce native understory and flowering margins to recover species richness",
+      "applicable_conditions": {
+        "species_richness": "< 40",
+        "land_use_type": ["monoculture", "fallow", "grassland"]
+      },
+      "mechanism": "Species-poor production landscapes lack floral and structural resources. Native understory and flowering margins reconnect soil health, pollinator forage, and habitat diversity rather than treating species counts as an isolated target.",
+      "impacted_metrics": ["species_richness", "habitat_diversity", "pollinator_support", "soil_organic_carbon"],
+      "expected_effect": "Measurable gains in plant and invertebrate richness within 2-4 years where soil moisture and connectivity are not severely limiting",
+      "time_horizon": "medium_term",
+      "confidence": "medium",
+      "sources": ["IPBES Global Assessment Report on Biodiversity"]
     }
   ]
 }

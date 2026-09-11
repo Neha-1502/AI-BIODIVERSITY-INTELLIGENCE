@@ -23,9 +23,9 @@ import llm_client
 import query_kb
 
 
-SYNTHESIS_SYSTEM_PROMPT = """You are an AI environmental scientist assistant for
-Darukaa.Earth. You explain biodiversity/land-management interventions to a user
-based STRICTLY on evidence that has already been retrieved for you.
+SYNTHESIS_SYSTEM_PROMPT = """You are an AI environmental scientist for Darukaa.Earth.
+You reason about land, climate, and biodiversity using ONLY evidence that has
+already been retrieved for you. You are not a generic chatbot.
 
 CRITICAL RULES:
 - Use ONLY the intervention data, relationship chains, and evidence chunks
@@ -33,13 +33,15 @@ CRITICAL RULES:
   are not present in the provided context.
 - Do not soften or generalize the specific numbers you're given (e.g. keep
   "15-25% over 2-3 years", don't reduce it to "significant improvement").
-- Connect at least two environmental variables per recommendation, using the
-  provided relationship chain data -- this is mandatory (multi-metric reasoning).
-- Write the "reasoning" field as 2-4 sentences of clear scientific explanation,
-  synthesizing the mechanism + relationship chain + evidence chunk content in
-  your own words (not copy-pasted verbatim from the evidence chunks).
-- For "sources", combine the structured sources given AND cite the filename/
-  document of any evidence chunk you drew from.
+- Connect at least THREE environmental variables in the overall response, and
+  at least two per recommendation, using the relationship-chain data. Never
+  give a single-variable answer.
+- Write the "reasoning" field as 2-4 sentences of scientific explanation
+  (mechanism + linked metrics + evidence). Do not copy chunks verbatim.
+- If the user asked a follow-up, answer that focus first while still grounding
+  in retrieved evidence. Do not ignore newly collected metrics.
+- For "sources", combine structured sources AND the filename of any evidence
+  chunk you used.
 - Output ONLY a JSON object matching this exact schema (no markdown, no preamble):
 
 {
@@ -62,11 +64,90 @@ If the provided context contains no matching interventions, return:
 """
 
 
-def _format_context_for_prompt(enriched_results: list, user_inputs: dict) -> str:
-    """Serializes the retrieved structured + vector evidence into a clear
-    text block for the LLM to synthesize from."""
-    lines = [f"USER-PROVIDED CONDITIONS: {json.dumps(user_inputs)}", ""]
+def serialize_retrieval(payload: dict) -> dict:
+    """Compact retrieval trace for the UI (how knowledge was used)."""
+    trace = []
+    for r in payload.get("matched_interventions") or []:
+        iv = r["intervention"]
+        matched = iv.get("_matched_on") or {}
+        triggers = [
+            f"{metric}={detail['value']} (condition {detail['condition']})"
+            for metric, detail in matched.items()
+        ]
+        chains = [
+            f"{e['from']} → {e['to']} ({e['relationship']})"
+            for e in r.get("relationship_chains", [])[:6]
+        ]
+        chunks = []
+        for chunk in r.get("evidence_chunks", [])[:2]:
+            chunks.append({
+                "filename": chunk.get("filename", "unknown"),
+                "relevance": chunk.get("relevance_score"),
+                "excerpt": (chunk.get("text") or "")[:280],
+            })
+        trace.append({
+            "id": iv.get("id"),
+            "action": iv.get("action"),
+            "triggered_by": triggers,
+            "relationship_chains": chains,
+            "evidence": chunks,
+        })
+    condition_evidence = []
+    for chunk in payload.get("condition_evidence") or []:
+        condition_evidence.append({
+            "filename": chunk.get("filename", "unknown"),
+            "relevance": chunk.get("relevance_score"),
+            "excerpt": (chunk.get("text") or "")[:280],
+        })
+    cross = [
+        f"{e['from']} → {e['to']} ({e['relationship']})"
+        for e in payload.get("cross_metric_chains") or []
+    ]
+    return {
+        "interventions": trace,
+        "cross_metric_chains": cross,
+        "condition_evidence": condition_evidence,
+        "variables": payload.get("variables") or [],
+    }
 
+
+def _format_context_for_prompt(
+    payload: dict,
+    user_inputs: dict,
+    conversation_history: list | None = None,
+    user_focus: str | None = None,
+) -> str:
+    """Serializes retrieved structured + vector evidence for synthesis."""
+    lines = [f"USER-PROVIDED CONDITIONS: {json.dumps(user_inputs)}", ""]
+    variables = list(user_inputs.keys())
+    lines.append(
+        f"MULTI-METRIC REQUIREMENT: You must reason across these {len(variables)} "
+        f"variables together: {', '.join(variables)}. Minimum required is 3."
+    )
+    lines.append("")
+    if user_focus:
+        lines.append(f"USER FOLLOW-UP / FOCUS: {user_focus}")
+        lines.append("")
+    if conversation_history:
+        lines.append("RECENT CONVERSATION:")
+        for turn in conversation_history[-6:]:
+            content = str(turn.get("content", ""))[:400]
+            lines.append(f"  {turn.get('role')}: {content}")
+        lines.append("")
+
+    if payload.get("cross_metric_chains"):
+        lines.append("SITE-LEVEL RELATIONSHIP CHAINS (connect these variables):")
+        for edge in payload["cross_metric_chains"]:
+            lines.append(f"  {edge['from']} -> {edge['to']} ({edge['relationship']}): {edge['note']}")
+        lines.append("")
+
+    if payload.get("condition_evidence"):
+        lines.append("RETRIEVED EVIDENCE FOR SITE CONDITIONS (vector search):")
+        for chunk in payload["condition_evidence"]:
+            lines.append(f"  [Source: {chunk['filename']}] {chunk['text']}")
+        lines.append("")
+
+    enriched_results = payload.get("matched_interventions") or []
     if not enriched_results:
         lines.append("No matching interventions were found in the structured knowledge base for these conditions.")
         return "\n".join(lines)
@@ -96,21 +177,31 @@ def _format_context_for_prompt(enriched_results: list, user_inputs: dict) -> str
     return "\n".join(lines)
 
 
-def generate_recommendations(user_inputs: dict) -> dict:
-    """Main entry point for the conversational layer. Given collected user
-    inputs (a dict of slot_name: value), retrieves evidence and returns a
-    schema-compliant recommendation set."""
-    enriched_results = query_kb.retrieve_full_context(user_inputs)
-    context_block = _format_context_for_prompt(enriched_results, user_inputs)
+def generate_recommendations(
+    user_inputs: dict,
+    conversation_history: list | None = None,
+    user_focus: str | None = None,
+) -> dict:
+    """Retrieve evidence and return a schema-compliant recommendation set."""
+    payload = query_kb.retrieve_full_context(user_inputs)
+    enriched_results = payload.get("matched_interventions") or []
+    context_block = _format_context_for_prompt(
+        payload,
+        user_inputs,
+        conversation_history=conversation_history,
+        user_focus=user_focus,
+    )
 
     try:
         result = llm_client.chat_json(
             system_prompt=SYNTHESIS_SYSTEM_PROMPT,
             user_prompt=context_block,
         )
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, llm_client.LLMUnavailableError) as e:
         # Fallback: return the raw structured data without LLM synthesis,
-        # so the system still produces a valid (if less polished) answer.
+        # so the system still produces a valid (if less polished) answer
+        # even if the LLM is malfunctioning or its quota is exhausted.
+        reason = "quota/rate limit" if isinstance(e, llm_client.LLMUnavailableError) else "malformed response"
         result = {
             "recommendations": [
                 {
@@ -124,9 +215,11 @@ def generate_recommendations(user_inputs: dict) -> dict:
                 }
                 for r in enriched_results
             ],
-            "summary": "(LLM synthesis unavailable -- showing raw structured matches)",
+            "summary": f"(LLM synthesis temporarily unavailable [{reason}] -- showing raw structured matches)",
         }
 
+    result["_retrieval"] = serialize_retrieval(payload)
+    result["_variables_used"] = payload.get("variables") or list(user_inputs.keys())
     return result
 
 
@@ -141,12 +234,16 @@ def format_recommendations_markdown(result: dict) -> str:
         return "\n".join(lines) if lines else "No recommendations could be generated for these conditions yet."
 
     for i, rec in enumerate(result["recommendations"], 1):
-        lines.append(f"### {i}. {rec['action']}")
-        lines.append(f"**Why it works:** {rec['reasoning']}")
-        lines.append(f"**Impacted metrics:** {', '.join(rec['impacted_metrics'])}")
-        lines.append(f"**Expected improvement:** {rec['expected_improvement']}")
-        lines.append(f"**Time horizon:** {rec['time_horizon'].replace('_', ' ')} | **Confidence:** {rec['confidence']}")
-        lines.append(f"**Sources:** {', '.join(rec['sources'])}")
+        horizon = str(rec.get("time_horizon", "")).replace("_", " ")
+        lines.append(f"### {i}. Recommendation")
+        lines.append(rec["action"])
+        lines.append("")
+        lines.append(f"**Why it works (scientific reasoning):** {rec['reasoning']}")
+        lines.append(f"**Impacted metrics:** {', '.join(rec.get('impacted_metrics') or [])}")
+        lines.append(f"**Expected improvement:** {rec.get('expected_improvement', 'n/a')}")
+        lines.append(f"**Time horizon:** {horizon}")
+        lines.append(f"**Confidence:** {rec.get('confidence', 'n/a')}")
+        lines.append(f"**Evidence / sources:** {', '.join(rec.get('sources') or [])}")
         lines.append("")
 
     return "\n".join(lines)
