@@ -63,8 +63,22 @@ CSS = """
 <style>
     @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
-    html, body, [class*="st-"] {
+    html, body, .stApp, [data-testid="stMarkdownContainer"], [data-testid="stChatMessage"] {
         font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    /* Streamlit toolbar/sidebar controls are Material ligatures; do not restyle their font. */
+    span[data-testid="stIconMaterial"],
+    .material-icons,
+    .material-symbols-rounded,
+    .material-symbols-outlined {
+        font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons" !important;
+        font-weight: 400 !important;
+        font-style: normal !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        white-space: nowrap;
+        -webkit-font-feature-settings: "liga";
+        font-feature-settings: "liga";
     }
     .stApp {
         background:
